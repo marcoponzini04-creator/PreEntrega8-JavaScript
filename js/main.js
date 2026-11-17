@@ -30,8 +30,15 @@ const entradaGeneral = new Entrada("General", 10000, "Campo", 100);
 const entradaPreferencial = new Entrada("Preferencial", 15000, "Platea", 50);
 const entradaVIP = new Entrada("VIP", 25000, "Sector VIP", 20);
 
-// Guardamos los objetos en un array
-const entradas = [entradaGeneral, entradaPreferencial, entradaVIP];
+// Recuperamos las entradas guardadas o usamos las iniciales
+let entradas = JSON.parse(localStorage.getItem("entradas")) ??
+    [entradaGeneral, entradaPreferencial, entradaVIP];
+
+// Guardamos las entradas en el almacenamiento del navegador
+   function guardarEntradas() {
+    localStorage.setItem("entradas", JSON.stringify(entradas));
+
+   }
 
 // Mostramos las entradas disponibles en la página
 function renderizarEntradas(lista = entradas) {
@@ -46,12 +53,23 @@ if (lista.length === 0) {
 
     lista.forEach((entrada) => {
     const indice = entradas.indexOf(entrada);
+    // Extraemos las propiedades del objeto
+    const { tipo, precio, sector, stock } = entrada;
+
+    // verificamos la disponibilidad con un operador ternario
+        const disponibilidad = stock > 0 ? "Disponible" : "Agotada";
         contenedorEntradas.innerHTML += `
             <div class="tarjeta-entrada">
-                <h3>Entrada ${entrada.tipo}</h3>
-                <p>Precio: $${entrada.precio}</p>
-                <p>Sector: ${entrada.sector}</p>
-                <p>Stock disponible: ${entrada.stock}</p>
+                <h3>Entrada ${tipo}</h3>
+                <p>Precio: $${precio}</p>
+                <p>Sector: ${sector}</p>
+                <p>Stock disponible: ${stock}</p>
+                <p>Estado: ${disponibilidad}</p>
+
+                <button class="boton-vender" data-indice="${indice}">
+                    Vender 1 entrada
+                </button>
+
                 <button class="boton-eliminar" data-indice="${indice}">
                     Eliminar entrada
                 </button>
@@ -79,6 +97,9 @@ const nuevaEntrada = new Entrada(tipo, precio, sector, stock);
 // Agregamos la entrada al array
 entradas.push(nuevaEntrada);
 
+// Guardamos los cambion en localStorage
+guardarEntradas();
+
 // Actualizamos las entradas que aparecen en pantalla
 renderizarEntradas();
 
@@ -97,6 +118,23 @@ mensajeEntrada.style.color = "green";
 // Detectamos cuando el usuario hace clic en eliminar
 contenedorEntradas.addEventListener("click", function(evento) {
 
+// Detectamos cuando se vende una entrada
+if (evento.target.classList.contains("boton-vender")) {
+    const indice = Number(evento.target.dataset.indice);
+    
+    // Verificamos que haya stock disponible
+    if (entradas[indice].stock > 0) {
+        entradas[indice].stock--;
+
+        // Guardamos el nuevo stock
+        guardarEntradas();
+
+        // Actualizamos las tarjetas
+        renderizarEntradas();
+    }
+}    
+
+
     if (evento.target.classList.contains("boton-eliminar")) {
 
         // Obtenemos la posición de la entrada
@@ -104,6 +142,9 @@ contenedorEntradas.addEventListener("click", function(evento) {
 
         // Eliminamos la entrada del array
         entradas.splice(indice, 1);
+
+        // Guardamos la eliminación en localStorage
+        guardarEntradas();
 
         // Actualizamos las tarjetas
         renderizarEntradas();
@@ -123,4 +164,18 @@ buscadorEntradas.addEventListener("input", function() {
 
     // Mostramos solamente las entradas encontradas
     renderizarEntradas(entradasFiltradas);
+});
+
+// Obtenemos el botón para vaciar las entradas
+const botonVaciar = document.getElementById("vaciar-entradas");
+
+// Vaciamos todas las entradas al hacer clic
+botonVaciar.addEventListener("click", function() {
+    entradas.length = 0;
+
+    // Guarsdamos el array vacío en localStorage
+    guardarEntradas();
+
+    // Actualizamos las tarjetas en pantalla
+    renderizarEntradas();
 });
